@@ -39,10 +39,25 @@ function custom_wp_101_display_content() {
     if (is_array($external_content) && !is_wp_error($external_content)) {
         $content_body = wp_remote_retrieve_body($external_content);
 
-        // Display the fetched content
+        // Create a DOMDocument object to manipulate the HTML
+        $dom = new DOMDocument;
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($content_body);
+        libxml_clear_errors();
+
+        // Update links to open within the same admin page
+        $links = $dom->getElementsByTagName('a');
+        foreach ($links as $link) {
+            $href = $link->getAttribute('href');
+            $new_href = add_query_arg('external_link', $href, admin_url('admin.php?page=custom-wp-101-plugin'));
+            $link->setAttribute('href', $new_href);
+            $link->setAttribute('target', '_self');
+        }
+
+        // Display the updated content
         echo '<div class="wrap">';
         echo '<h1>WP 101 Tutorials</h1>';
-        echo $content_body; // Display the fetched content here
+        echo $dom->saveHTML(); // Display the updated content
         echo '</div>';
     } else {
         echo '<div class="wrap"><p>Error fetching content from WP Corner.</p></div>';
